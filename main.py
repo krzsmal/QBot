@@ -19,7 +19,7 @@ if __name__ == '__main__':
         print(MAIN_MENU)
         while msvcrt.kbhit():
             msvcrt.getch()
-        option = input(" Select an option: ")
+        option = input(" Choose an option: ")
         os.system('cls')
 
         match option:
@@ -30,7 +30,7 @@ if __name__ == '__main__':
                     print("Choose operation to insert:")
                 while True:
                     print(OPERATIONS)
-                    operation = input(" Select an operation: ")
+                    operation = input(" Choose an operation: ")
                     os.system('cls')
                     match operation:
                         case "1":
