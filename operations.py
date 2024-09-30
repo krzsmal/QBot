@@ -9,28 +9,30 @@ from constants import KEY_NAMES
 from utils import on_move_get_coordinates, on_key_press_recording, on_key_press_get_coordinates, on_key_press_get_key, on_key_press_append_key_to_hotkey, on_move_append_action, on_click_append_action
 
 
+# Abstract base class defining an operation
 class Operation(ABC):
     def get_name(self):
-        return self.__class__.__name__
+        return self.__class__.__name__  # Returns the class name as the operation name
 
     @abstractmethod
     def get_dict(self):
-        pass
+        pass    # Abstract method to be implemented in subclasses for returning a dictionary representation of the operation
 
     @abstractmethod
     def execute(self, mouse, keyboard):
-        pass
+        pass    # Abstract method to be implemented in subclasses for executing the operation using mouse or keyboard
 
     @abstractmethod
     def __repr__(self):
-        pass
+        pass    # Abstract method for string representation of the operation
 
     @classmethod
     @abstractmethod
     def create_from_user_input(cls):
-        pass
+        pass    # Abstract method for creating an operation based on user input
 
 
+# Concrete class representing a pause operation
 class Pause(Operation):
     def __init__(self, duration):
         assert isinstance(duration, float), "Pause: duration must be float."
@@ -44,7 +46,7 @@ class Pause(Operation):
         return {"type": self.get_name(), "duration": self.get_duration()}
 
     def execute(self, mouse, keyboard):
-        time.sleep(self.__duration)
+        time.sleep(self.__duration)     # Pauses execution for the specified duration
 
     def __repr__(self):
         return "Pause(" + str(self.__duration) + ")"
@@ -66,6 +68,7 @@ class Pause(Operation):
                     print("Duration must be instance of int or float\n.")
 
 
+# Concrete class representing a move mouse to a specific point operation
 class MoveMouseToPoint(Operation):
     def __init__(self, x, y):
         assert isinstance(x, int), "MouseMoveToPoint: x must be int."
@@ -87,7 +90,7 @@ class MoveMouseToPoint(Operation):
         return {"type": self.get_name(), "x": self.get_x(), "y": self.get_y()}
 
     def execute(self, mouse, keyboard):
-        mouse.position = (self.__x, self.__y)
+        mouse.position = (self.__x, self.__y)   # Move the mouse to the specified position
 
     def __repr__(self):
         return "MoveMouseToPoint(X:" + str(self.__x) + ", Y:" + str(self.__y) + ")"
@@ -104,6 +107,7 @@ class MoveMouseToPoint(Operation):
         return cls(*position[0])
 
 
+# Concrete class representing the replication of mouse movements
 class ReplicateMouseMovement(Operation):
     def __init__(self, positions):
         assert isinstance(positions, list), "Positions must be a list."
@@ -123,7 +127,7 @@ class ReplicateMouseMovement(Operation):
     def get_dict(self):
         return {"type": self.get_name(), "positions": self.get_positions()}
 
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Move the mouse through all recorded positions
         for coordinates in self.__positions:
             mouse.position = coordinates
             time.sleep(0.001)
@@ -144,6 +148,7 @@ class ReplicateMouseMovement(Operation):
         return cls(recorded_mouse_movement)
 
 
+# Concrete class representing replication of mouse actions (clicks and movements)
 class ReplicateMouseActions(Operation):
     def __init__(self, actions):
         assert isinstance(actions, list), "ReplicateMouseActions: actions must be a list."
@@ -174,7 +179,7 @@ class ReplicateMouseActions(Operation):
                 actions.append((action[0], str(action[1])))
         return {"type": self.get_name(), "actions": actions}
 
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Replay the mouse actions
         for action in self.__actions:
             if action[0] == "m":
                 mouse.position = action[1]
@@ -222,6 +227,7 @@ class ReplicateMouseActions(Operation):
         return cls(recorded_actions)
 
 
+# Concrete class representing a mouse click operation
 class ClickMouse(Operation):
     def __init__(self, x, y, button, clicks):
         assert isinstance(x, int), "ClickMouse: x must be int."
@@ -253,7 +259,7 @@ class ClickMouse(Operation):
     def get_dict(self):
         return {"type": self.get_name(), "x": self.get_x(), "y": self.get_y(), "button": str(self.get_button()), "clicks": self.get_clicks()}
 
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Move mouse and perform clicks
         mouse.position = (self.__x, self.__y)
         mouse.click(self.__button, self.__clicks)
 
@@ -293,6 +299,7 @@ class ClickMouse(Operation):
         return cls(x, y, btn, clicks)
 
 
+# Abstract base class for mouse press and release operations
 class PrsRlsMouse(Operation):
     def __init__(self, button):
         assert isinstance(button, Button), f"{self.get_name()}: button must be instance of Button."
@@ -321,16 +328,19 @@ class PrsRlsMouse(Operation):
         return f"{self.get_name()}(" + str(self.__button) + ")"
 
 
+# Concrete class for pressing a mouse button
 class PressMouse(PrsRlsMouse):
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Press the specified mouse button
         mouse.press(self.get_button())
 
 
+# Concrete class for releasing a mouse button
 class ReleaseMouse(PrsRlsMouse):
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Release the specified mouse button
         mouse.release(self.get_button())
 
 
+# Concrete class for typing text
 class TypeText(Operation):
     def __init__(self, text):
         assert isinstance(text, str), "TypeText: text must be instance of str."
@@ -342,7 +352,7 @@ class TypeText(Operation):
     def get_dict(self):
         return {"type": self.get_name(), "text": self.get_text()}
 
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Type the text using the keyboard
         try:
             keyboard.type(self.__text)
         except ctypes.ArgumentError:
@@ -358,6 +368,7 @@ class TypeText(Operation):
         return cls(text)
 
 
+# Abstract base class for key operations (press, release, and click)
 class KeyOperations(Operation):
     def __init__(self, key):
         assert (isinstance(key, Key) or (isinstance(key, KeyCode) and key.vk in KEY_NAMES.keys())), f"{self.get_name()}: invalid key."
@@ -392,21 +403,25 @@ class KeyOperations(Operation):
         return cls(keys_pressed[0])
 
 
+# Concrete class representing a key tap (press and release)
 class ClickKey(KeyOperations):
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Simulates tapping (press and release) the given key
         keyboard.tap(self.get_key())
 
 
+# Concrete class representing a key press action
 class PressKey(KeyOperations):
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Simulates pressing (holding down) the given key
         keyboard.press(self.get_key())
 
 
+# Concrete class representing a key release action
 class ReleaseKey(KeyOperations):
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Simulates releasing the given key
         keyboard.release(self.get_key())
 
 
+# Concrete class representing the use of a hotkey (a combination of keys)
 class UseHotkey(Operation):
     def __init__(self, *args):
         assert (isinstance(args, tuple) and
@@ -431,7 +446,7 @@ class UseHotkey(Operation):
                 keys.append(key.vk)
         return {"type": self.get_name(), "keys": keys}
 
-    def execute(self, mouse, keyboard):
+    def execute(self, mouse, keyboard):     # Simulate pressing and releasing all keys in the hotkey combination
         for key in self.__keys:
             keyboard.press(key)
         for key in self.__keys:
